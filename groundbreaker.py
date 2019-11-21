@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-import re
-import bs4
 import getpass
 import os
 import getopt
@@ -59,7 +57,7 @@ def randomAnswer(inputFile):
     return pick    
 
 def keychainz():
-    keyring.set_password("groundbreaker", os.getlogin(), getpass.getpass(prompt="CEC Password: "))
+    keyring.set_password("groundbreaker", os.getlogin(), getpass.getpass(prompt="Password: "))
     print("Saved in keyring!\nRestart script.\n")
     exit()
 
