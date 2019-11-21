@@ -1,0 +1,5 @@
+love:Automating Teamspace entries.
+loathe:Not creating these scripts sooner
+priority:Python script to automate ____
+priority:Borg scripts
+help:
