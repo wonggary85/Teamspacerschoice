@@ -44,7 +44,7 @@ def initBrowser():
         else:
             driver_path = input("Path to chromedriver.exe: ").strip(' "\'\t\r\n')
             file = open('.env', 'a+')
-            file.write('driver_path=%s" % driver_path)
+            file.write('driver_path=%s' % driver_path)
             file.close()
     browser = webdriver.Chrome(options=chrome_options, desired_capabilities=capabilities, executable_path=driver_path)
     return browser
@@ -104,7 +104,7 @@ def submit_Weekly(love, loathe, priority, help, browser):
 
     # Loved responses
     WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.CLASS_NAME, "input.strText")))
-    inputLove = browser.find_element_by_class_name("input.strText").clear()
+    inputLove = browser.find_element_by_class_name("input.strText")
     inputLove.clear()
     #inputLove = browser.find_element_by_class_name("input.strText")
     #inputLove.send_keys(love)
@@ -113,6 +113,7 @@ def submit_Weekly(love, loathe, priority, help, browser):
     # Loathed responses
     browser.find_element_by_class_name("input.weakText").clear()
     inputLoathe = browser.find_element_by_class_name("input.weakText")
+    inputLoathe.clear()
     #inputLoathe.send_keys(loathe)
     submit_text(loathe, inputLoathe)
     browser.find_element_by_class_name('nextButton.pageButton').click()
@@ -120,20 +121,24 @@ def submit_Weekly(love, loathe, priority, help, browser):
     # Priorities
     WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.ID, 'dlt-goalinput')))
     inputPri = browser.find_element_by_id('dlt-goalinput')
-    submit_text(priority, inputPri)
+    for item in priority:
+        submit_text(priority, inputPri)
+        browser.find_element_by_id('dlt-addgoalbtn')
+    #submit_text(priority, inputPri)
     browser.find_element_by_class_name('nextButton.pageButton').click()
     
     # Help responses
     WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.ID, 'needinput')))
-    inputNeed = browser.find_element_by-id('needinput')
+    inputNeed = browser.find_element_by_id('needinput')
+    inputNeed.clear()
     submit_text(help, inputNeed)
-    browser.find_element_by_class_name('button.pageButton.finishButton').click()
+    #browser.find_element_by_class_name('button.pageButton.finishButton').click()
     print("Submitting")
 
 def submit_text(responseList, textbox):
-    for line in response:
-        textbox.send_keys(line.strip('\n')
-        if len(response) > 1:
+    for line in responseList:
+        textbox.send_keys(line.strip('\n'))
+        if len(responseList) > 1:
             ActionChains(browser).key_down(Keys.SHIFT).key_down(Keys.ENTER).key_up(Keys.SHIFT).key_up(Keys.ENTER).perform()
 
 def resetSingleUse():
@@ -172,6 +177,7 @@ def main(argv):
     priority = []
     help = []
 
+    load_dotenv()
     if os.getenv('url'):
         url = os.getenv('url')
     else:
@@ -256,4 +262,3 @@ def main(argv):
 
 if __name__=="__main__":
     main(sys.argv[1:])
-    load_dotenv()
