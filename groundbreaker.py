@@ -98,8 +98,9 @@ def submit_Weekly(love, loathe, priority, help, browser):
 
     # Loved responses
     WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.CLASS_NAME, "input.strText")))
-    browser.find_element_by_class_name("input.strText").clear()
-    inputLove = browser.find_element_by_class_name("input.strText")
+    inputLove = browser.find_element_by_class_name("input.strText").clear()
+    inputLove.clear()
+    #inputLove = browser.find_element_by_class_name("input.strText")
     #inputLove.send_keys(love)
     submit_text(love, inputLove)
 
@@ -111,11 +112,15 @@ def submit_Weekly(love, loathe, priority, help, browser):
     browser.find_element_by_class_name('nextButton.pageButton').click()
 
     # Priorities
-    
+    WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.ID, 'dlt-goalinput')))
+    inputPri = browser.find_element_by_id('dlt-goalinput')
+    submit_text(priority, inputPri)
     browser.find_element_by_class_name('nextButton.pageButton').click()
     
     # Help responses
-
+    WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.ID, 'needinput')))
+    inputNeed = browser.find_element_by-id('needinput')
+    submit_text(help, inputNeed)
     browser.find_element_by_class_name('button.pageButton.finishButton').click()
     print("Submitting")
 
@@ -136,6 +141,13 @@ def check_quit():
         if close_browser.lower() in ('y', 'yes'):
             browser.close()
             return
+
+def printHelp():
+    print("-k | --keychain:\tStores your password (Keychain on macOS or Windows Credential Locker on Windows)")
+    print("-l | --love:\tSpecify a single use string")
+    print("-d | --dislike:\tSpecify a single use string")
+    print("-p | --priority:\tSpecify a single use string")
+    print("-n | --need:\tSpecify a single use string")
 
 def main(argv):
     """
@@ -204,7 +216,7 @@ def main(argv):
         if opt in ('-k', '--keychain'):
             keychainz()
         elif opt in ('-h', '--help'):
-            #printHelp()
+            printHelp()
             pass
         elif singleuse == False:
             if opt in ('-l', '--love'):
