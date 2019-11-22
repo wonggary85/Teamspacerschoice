@@ -8,13 +8,13 @@ Use Groundbreaker to immediately run a single check-in. Use Teamspacerschoice to
 
 Requires [chromedriver](https://chromedriver.chromium.org/) to be installed.
 
-Windows users probably need to use WSL since `at` command is a linux only command.
+Currently not compatible with Windows WSL.
 
 ## Groundbreaker.py 
 
 This script will fetch a list of pre-recorded responses in love.txt, loathe.txt, priority.txt, and help.txt, and randomly select a single response to use.
 
-Login credentials can be stored with option '-k' or '--keychain'. The credentials is saved to the native 'Keychain Access' app in macOS or 'Windows Credential Locker' on Windows.
+Login credentials can be stored with option '-k' or '--keychain'. The credentials is saved to the native 'Keychain Access' app in macOS ~~or 'Windows Credential Locker' on Windows~~.
 
 The script can also automatically retireve and use single use responses recorded in singleuse.txt or with CLI arguments. Single use responses take precedence over pre-recorded responses.
 
