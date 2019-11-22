@@ -122,9 +122,8 @@ def submit_Weekly(love, loathe, priority, help, browser):
     WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.ID, 'dlt-goalinput')))
     inputPri = browser.find_element_by_id('dlt-goalinput')
     for item in priority:
-        submit_text(priority, inputPri)
-        browser.find_element_by_id('dlt-addgoalbtn')
-    #submit_text(priority, inputPri)
+        inputPri.send_keys(item.strip('\n'))
+        browser.find_element_by_id('dlt-addgoalbtn').click()
     browser.find_element_by_class_name('nextButton.pageButton').click()
     
     # Help responses
@@ -132,7 +131,7 @@ def submit_Weekly(love, loathe, priority, help, browser):
     inputNeed = browser.find_element_by_id('needinput')
     inputNeed.clear()
     submit_text(help, inputNeed)
-    #browser.find_element_by_class_name('button.pageButton.finishButton').click()
+    browser.find_element_by_class_name('button.pageButton.finishButton').click()
     print("Submitting")
 
 def submit_text(responseList, textbox):
