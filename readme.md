@@ -1,5 +1,7 @@
 # About
 
+Written in python3. Install modules with `pip3 install -r requirements`.
+
 This is composed of two scripts, Groundbreaker.py and Teamspacerschoice.py. Groundbreaker can be used without Teamspacerschoice.
 
 Use Groundbreaker to immediately run a single check-in. Use Teamspacerschoice to schedule a single non-recurring check-in.
