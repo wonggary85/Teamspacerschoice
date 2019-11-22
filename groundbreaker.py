@@ -39,7 +39,13 @@ def initBrowser():
     if sys.platform == 'darwin':
         driver_path = "/usr/local/bin/chromedriver"
     else:
-        driver_path = input("Path to chromedriver.exe: ").strip(' "\'\t\r\n')
+        if os.getenv('driver_path'):
+             driver_path = os.getenv('driver_path')
+        else:
+            driver_path = input("Path to chromedriver.exe: ").strip(' "\'\t\r\n')
+            file = open('.env', 'a+')
+            file.write('driver_path=%s" % driver_path)
+            file.close()
     browser = webdriver.Chrome(options=chrome_options, desired_capabilities=capabilities, executable_path=driver_path)
     return browser
 
