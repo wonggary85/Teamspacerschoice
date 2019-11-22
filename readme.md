@@ -4,6 +4,8 @@ This is composed of two scripts, Groundbreaker.py and Teamspacerschoice.py. Grou
 
 Use Groundbreaker to immediately run a single check-in. Use Teamspacerschoice to schedule a single non-recurring check-in.
 
+Requires [chromedriver](https://chromedriver.chromium.org/) to be installed.
+
 ## Groundbreaker.py 
 
 This script will fetch a list of pre-recorded responses in love.txt, loathe.txt, priority.txt, and help.txt, and randomly select a single response to use.
