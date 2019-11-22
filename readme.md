@@ -6,6 +6,8 @@ Use Groundbreaker to immediately run a single check-in. Use Teamspacerschoice to
 
 Requires [chromedriver](https://chromedriver.chromium.org/) to be installed.
 
+Windows users probably need to use WSL since `at` command is a linux only command.
+
 ## Groundbreaker.py 
 
 This script will fetch a list of pre-recorded responses in love.txt, loathe.txt, priority.txt, and help.txt, and randomly select a single response to use.
@@ -18,7 +20,7 @@ The first run will create the necessary files needed to populate responses.
 
 ## Teamspacerschoice.py
 
-This uses the bash 'at' command. You can view jobs with 'atq' command, and remove scheduled jobs with 'atrm $JobID'.
+This uses the bash `at` command. You can view jobs with `atq` command, and remove scheduled jobs with `atrm $JobID`.
 
 Teamspacerschoice can be run once to schedule a groundbreaker.py job. The job is a single non-recurring job (executed once). The scheduled job persists across reboots.
 
