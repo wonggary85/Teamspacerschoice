@@ -51,6 +51,10 @@ Ideal usage is to execute teamspacerschoice.py with the '-c' option, which will 
 
 Teamspacerschoice schedules jobs only between 10AM-4PM, except on Fridays between Noon and 4PM.
 
+## Keychainz.py
+
+Handles passwords used with Keyring/Windows Credential Locker. Not designed to be used by itself.
+
 ## .env
 
 A '.env' file can be setup with variables for the URL and chromedriver absolute path.
