@@ -8,9 +8,14 @@
 
 * Install [chromedriver](https://chromedriver.chromium.org/)
 
-* Execute `python3 groundbreaker.py` once to create corresponding files to populate responses
+* Execute `groundbreaker.py` once to create corresponding files to populate responses
+  * Populate the files with responses
 
-* (Optional) Recommended to run `teamspacerschoice.py -c` to create cronjob
+* Execute teamspacerschoice or groundbreaker once
+  * Execute `teamspacerschoice.py` once to randomly schedule `groundbreaker.py` for the week
+  * Alternatively, execute `groundbreaker.py` to immediately run
+
+* (Optional) Recommended to run `teamspacerschoice.py -c` to create cronjob for teamspacerschoice
 
 * (Optional) Recommended to run `groundbreaker.py -k` to save password in Keychain/Windows Credential Locker
 
@@ -52,8 +57,9 @@ A '.env' file can be setup with variables for the URL and chromedriver absolute 
 
 > url=https://example.com
 > driver_path=/absolute/path/to/chromedriver
-
+> nosubmit=True
 
 ## To Do
 - [x] Groundbreaker: Implement existing priorities handling
 - [ ] Teamspacerschoice: Windows alternative to `at` and `python-crontab`
+- [ ] Add Long Term Priorities support
