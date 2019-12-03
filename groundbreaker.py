@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import getpass
 import os
 import getopt
@@ -85,14 +85,45 @@ def check_Weekly(url, browser, user, passwd):
         phone = Select(browser.find_element_by_name('device'))
         phone.select_by_value('phone1')
         browser.find_element_by_class_name('positive.auth-button').click()
-        WebDriverWait(browser, 30).until(EC.title_contains("Team Dashboard"))
-        browser.get(url)
+        try:
+            if WebDriverWait(browser, 30).until(EC.title_contains(('Team Dashboard'))) or browser.title == 'My Check-Ins':
+                # Waiting up to 30s for 2FA before checking the title
+                pass
+        except (TimeoutException, NoSuchElementException):
+            # Trying to reload the URL
+            browser.get(url)
+            pass
+    if browser.title == 'Team Dashboard':
+        while True:
+            try:
+                print(f"Trying to click on myhome {browser.find_element_by_id('myhome')}")
+                WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.ID, 'myhome')))
+                browser.find_element_by_id('myhome').click()
+                if browser.find_element_by_id('myperformance').is_displayed():
+                    break
+            except TimeoutException:
+                # Trying again since the page title is correct
+                pass
+        while True:
+            try:
+                print(f"Trying to click on myperf {browser.find_element_by_id('myperformance')}")
+                WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.ID, 'myperformance')))
+                browser.find_element_by_id('myperformance').click()
+                if browser.title == 'My Check-Ins':
+                    break
+            except TimeoutException:
+                # Trying again
+                pass
     try:
         WebDriverWait(browser, 10).until(EC.title_contains("My Check-Ins"))
     except NoSuchElementException:
-        print("No Login or Check-in found.")
+        print("Unable to reach check-ins. Check your URL.\nQuitting.")
         exit()
-    WebDriverWait(browser, 15).until(EC.element_to_be_clickable((By.ID, 'checkinLauncher')))
+    try:
+        WebDriverWait(browser, 15).until(EC.element_to_be_clickable((By.ID, 'checkinLauncher')))
+    except NoSuchElementException:
+        print("No Login or Check-in found. Was it already completed?\nQuitting.")
+        exit()
     button = browser.find_element_by_class_name('button').click()
     return browser
 
@@ -148,7 +179,7 @@ def submit_Weekly(love, loathe, priority, help, browser):
         print("Not submitting")
         pass
     else:
-        #browser.find_element_by_class_name('button.pageButton.finishButton').click()
+        browser.find_element_by_class_name('button.pageButton.finishButton').click()
         print("Submitting")
 
 def submit_textbox(responseList, selection):
