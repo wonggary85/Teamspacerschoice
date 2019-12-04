@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-import getpass
 import os
 import getopt
 import sys
 import keychainz
 import selenium
 import subprocess
+from getpass import getpass
 from random import randint
 from dotenv import load_dotenv
 from selenium import webdriver
@@ -360,7 +360,7 @@ def main(argv):
         passwd = keychainz.getCreds(__file__)
     else:
         try:
-            passwd = getpass.getpass(prompt="\nPassword: ")
+            passwd = getpass(prompt="\nPassword: ")
         except KeyboardInterrupt:
             exit()
 
