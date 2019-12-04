@@ -55,6 +55,10 @@ Teamspacerschoice schedules jobs only between 10AM-4PM, except on Fridays betwee
 
 Handles passwords used with Keyring/Windows Credential Locker. Not designed to be used by itself.
 
+## gbformatter.py
+
+Use to easily add multiple entries to singleuse.txt. 
+
 ## .env
 
 A '.env' file can be setup with variables for the URL and chromedriver absolute path.
