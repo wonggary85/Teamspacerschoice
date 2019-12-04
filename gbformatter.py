@@ -1,29 +1,32 @@
 #!/usr/bin/env python3
 import sys
 import getopt
-from groundbreaker import resetSingleUse as rsu
+from groundbreaker import reset_single_use as rsu
 
-def responseFormatter(categories):
-    file = open('singleuse.txt', 'a+')
-    file.write("\n")
+
+def response_formatter(categories):
     inputs = []
-    for category in categories:
-        print(f"Writing to file {category}.\nctrl+c to stop current category entry.\n")
-        while True:
-            try:
-                line = input(f"{category}:")
-            except KeyboardInterrupt:
-                break
-            else:
-                if line == "":
-                    continue
+    with open('singleuse.txt', 'a+'):
+        file.write("\n")
+        for category in categories:
+            print(f"Writing to file {category}.\nctrl+c to stop current category entry.\n")
+            while True:
+                try:
+                    line = input(f"{category}:")
+                except KeyboardInterrupt:
+                    break
                 else:
-                    inputs.append(f"{category}:{line}")
-                    file.write(f"{category}:{line}\n")
-    file.close()
+                    if line == "":
+                        continue
+                    else:
+                        inputs.append(f"{category}:{line}")
+                        file.write(f"{category}:{line}\n")
     print(f"\nWrote {len(inputs)} lines.")
+    for item in inputs:
+        print(f'\n\t{item}')
 
-def printHelp():
+        
+def print_help():
     print("Helper tool to easily append multiple lines to \'singleuse.txt\' formatted for use with groundbreaker.py.\n")
     print("-l | --love:\tSpecify a single use string")
     print("-d | --dislike:\tSpecify a single use string")
@@ -31,6 +34,7 @@ def printHelp():
     print("-n | --need:\tSpecify a single use string")
     print("-r | --reset:\tClears/Resets the singleuse.txt file to default")
 
+    
 def main(argv):
     categories = []
     try:
@@ -40,7 +44,7 @@ def main(argv):
         exit()
     for opt,arg in opts:
         if opt in ('-h', '--help'):
-            printHelp()
+            print_help()
             exit()
         elif opt in ('-r', '--reset'):
             rsu()
@@ -55,10 +59,10 @@ def main(argv):
         elif opt in ('-n', '--need'):
             categories.append('help')
     if len(categories) > 0:
-        responseFormatter(categories)
+        response_formatter(categories)
     else:
         categories = ['love', 'loathe', 'priority', 'help']
-        responseFormatter(categories)
+        response_formatter(categories)
     exit()
 
 
