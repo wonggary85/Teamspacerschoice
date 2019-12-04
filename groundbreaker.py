@@ -283,7 +283,7 @@ def main(argv):
 
     if os.path.exists('singleuse.txt'):
         if sys.platform == 'win32':
-            cmd = "CertUtil -hashfile singleuse.txt MD5 | find /i /v \"MD5\" | find /i /v \"certutil\""
+            cmd = "CertUtil -hashfile singleuse.txt MD5 | find /i /v \"MD5\" | find /i /v \"certutil\""  # Windows find tool requires search string to be enclosed in double quotes
         else:
             cmd = "md5sum singleuse.txt | awk '{print $1}'"
         if '8810610524679e08dbaa38c96ac4a3af' not in subprocess.getoutput(cmd):
@@ -337,7 +337,7 @@ def main(argv):
         exit()
     for opt,arg in opts:
         if opt in ('-k', '--keychain'):
-            passwd = keychainz.setCreds(__file__)
+            passwd = keychainz.set_creds(__file__)
         elif opt in ('-h', '--help'):
             printHelp()
             pass
@@ -355,8 +355,8 @@ def main(argv):
                 help = []
                 help.append(arg)
 
-    if keychainz.getCreds(__file__):
-        passwd = keychainz.getCreds(__file__)
+    if keychainz.get_creds(__file__):
+        passwd = keychainz.get_creds(__file__)
     else:
         try:
             passwd = getpass(prompt="\nPassword: ")
