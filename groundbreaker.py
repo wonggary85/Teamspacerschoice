@@ -90,7 +90,6 @@ def check_weekly(url, browser, user, passwd):
     if browser.title == 'Team Dashboard':
         while True:
             try:
-                print(f"Trying to click on myhome {browser.find_element_by_id('myhome')}")
                 WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.ID, 'myhome')))
                 browser.find_element_by_id('myhome').click()
                 if browser.find_element_by_id('myperformance').is_displayed():
@@ -100,7 +99,6 @@ def check_weekly(url, browser, user, passwd):
                 pass
         while True:
             try:
-                print(f"Trying to click on myperf {browser.find_element_by_id('myperformance')}")
                 WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.ID, 'myperformance')))
                 browser.find_element_by_id('myperformance').click()
                 if browser.title == 'My Check-Ins':
