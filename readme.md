@@ -69,7 +69,3 @@ A '.env' file can be setup with variables for the URL and chromedriver absolute 
 
 > nosubmit=True
 
-## To Do
-- [x] Groundbreaker: Implement existing priorities handling
-- [ ] Teamspacerschoice: Windows alternative to `at` and `python-crontab`
-- [ ] Add Long Term Priorities support
