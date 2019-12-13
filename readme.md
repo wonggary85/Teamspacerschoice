@@ -64,7 +64,9 @@ Use to easily add multiple entries to singleuse.txt.
 A '.env' file can be setup with variables for the URL and chromedriver absolute path.
 
 > url=https://example.com
+
 > driver_path=/absolute/path/to/chromedriver
+
 > nosubmit=True
 
 ## To Do
