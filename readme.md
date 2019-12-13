@@ -7,6 +7,8 @@
 * Install python modules with `pip install -r requirements.txt`
 
 * Install [chromedriver](https://chromedriver.chromium.org/)
+  * macOS `brew cask install chromedriver`
+  * Windows https://chromedriver.chromium.org/downloads
 
 * Execute `groundbreaker.py` once to create corresponding files to populate responses
   * Populate the files with responses
