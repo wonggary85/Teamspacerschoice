@@ -6,3 +6,4 @@ help.txt
 singleuse.txt
 credentials.json
 token.pickle
+*.json
