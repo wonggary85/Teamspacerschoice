@@ -20,22 +20,25 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, ElementNotInteractableException, StaleElementReferenceException, ElementClickInterceptedException, WebDriverException
 
-"""
-macos install chromedriver with `brew cask install chromedriver`
-windows you're on your own
-"""
-
 ##################
 
-def init_browser():
+"""
+macos install chromedriver with `brew cask install chromedriver` and update with `brew cask upgrade chromedriver`
+Windows install from https://chromedriver.chromium.org/
+"""
+
+
+def init_browser(url):
     chrome_options = Options()
     load_dotenv()
-    if os.getenv('headless') == True:
+    if os.getenv('headless') == 'True':
         chrome_options.add_argument('--headless')
     chrome_options.add_argument('--disable-gpu')
     chrome_options.add_argument('--log-level=3')
     chrome_options.add_argument('--enable-file-cookies')
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36")
+    chrome_options.add_argument(f"--app={url}")
+    chrome_options.add_argument("--kiosk")
     capabilities = DesiredCapabilities.CHROME.copy()
     capabilities['platform'] = 'WINDOWS'
     capabilities['version'] = '10'
@@ -53,16 +56,28 @@ def init_browser():
             with open('.env', 'a+') as file:
                 file.write(f'\n\ndriver_path={driver_path}')
     browser = webdriver.Chrome(options=chrome_options, desired_capabilities=capabilities, executable_path=driver_path)
+    browser.set_window_size(1000,1000)
     return browser
+
 
 def random_answer(inputFile):
     # Randomly pick an answer
     lines = []
     with open(inputFile, 'r') as file:
         for line in file:
-            lines.append(line.strip('\n'))
+            if 'lt:' not in line:
+                lines.append(line.strip('\n'))
     pick = lines[randint(0,len(lines)-1)]
     return pick
+
+def incl_priority(inputFile):
+    lines = []
+    with open(inputFile, 'r') as file:
+        for line in file:
+            if 'lt:' in line:
+                lines.append(line.split(':', 1)[1].strip('\n'))
+    return lines
+
 
 def check_weekly(url, browser, user, passwd):
     page = False
@@ -76,27 +91,33 @@ def check_weekly(url, browser, user, passwd):
         browser.find_element_by_id('login-button').click()
         iframe = browser.find_element_by_tag_name('iframe')
         browser.switch_to.frame(iframe)
-        phone = Select(browser.find_element_by_name('device'))
-        phone.select_by_value('phone1')
-        browser.find_element_by_class_name('positive.auth-button').click()
+        try:
+            WebDriverWait(browser, 30).until(EC.element_to_be_clickable((By.NAME, 'device')))
+            phone = Select(browser.find_element_by_name('device'))
+            phone.select_by_value('phone1')
+            browser.find_element_by_class_name('positive.auth-button').click()
+        except (TimeoutException, NoSuchElementException):
+            pass 
         try:
             if WebDriverWait(browser, 30).until(EC.title_contains(('Team Dashboard'))) or browser.title == 'My Check-Ins':
                 # Waiting up to 30s for 2FA before checking the title
                 pass
-        except (TimeoutException, NoSuchElementException):
+        except (TimeoutException, NoSuchElementException, StaleElementReferenceException):
             # Trying to reload the URL
             browser.get(url)
             pass
     if browser.title == 'Team Dashboard':
         while True:
             try:
-                WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.ID, 'myhome')))
+                WebDriverWait(browser, 10).until(EC.element_to_be_clickable((By.ID, 'myhome')))
                 browser.find_element_by_id('myhome').click()
                 if browser.find_element_by_id('myperformance').is_displayed():
                     break
-            except TimeoutException:
+            except StaleElementReferenceException:
                 # Trying again since the page title is correct
                 pass
+            except TimeoutException:
+                print(f"myhome not found. Re-check your URL: {url}")
         while True:
             try:
                 WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.ID, 'myperformance')))
@@ -106,26 +127,28 @@ def check_weekly(url, browser, user, passwd):
             except TimeoutException:
                 # Trying again
                 pass
-    try:
-        WebDriverWait(browser, 10).until(EC.title_contains("My Check-Ins"))
-    except NoSuchElementException:
-        print("Unable to reach check-ins. Check your URL.\nQuitting.")
-        exit()
+    if browser.title == 'My Check-Ins':
+        try:
+            WebDriverWait(browser, 10).until(EC.title_contains("My Check-Ins"))
+        except NoSuchElementException:
+            print("Unable to reach check-ins. Check your URL.\nQuitting.")
+            exit()
     try:
         WebDriverWait(browser, 15).until(EC.element_to_be_clickable((By.ID, 'checkinLauncher')))
-    except NoSuchElementException:
+    except (NoSuchElementException, TimeoutException):
         print("No Login or Check-in found. Was it already completed?\nQuitting.")
         exit()
     button = browser.find_element_by_class_name('button').click()
     return browser
 
+
 def next_page():
     WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.CLASS_NAME, 'nextButton.pageButton')))
     browser.find_element_by_class_name('nextButton.pageButton').click()
+
  
 def submit_weekly(love, loathe, priority, help, browser):
     """Steps through the check-in and randomly sets engagement/value ratings within an average-excellent range.
-
     Randomly set engagement/value between 3-5.
     Responsible for stepping through the check-in.
     Calls function submit_textbox to handle the text inputs for each category.
@@ -173,16 +196,16 @@ def submit_weekly(love, loathe, priority, help, browser):
     inputHelp = ['class_name', 'input.needinput']
     submit_textbox(help, inputHelp)
     nosubmit = os.getenv('nosubmit')
-    if nosubmit == True:
+    if nosubmit.lower() == 'true':
         print("Not submitting")
         pass
     else:
         browser.find_element_by_class_name('button.pageButton.finishButton').click()
         print("Submitting")
 
+
 def submit_textbox(responseList, selection):
     """Handles each category of text input.
-
     responseList is self explainatory.
     Selection is a list composed of the type of element we are searching for, and the string we are searching for.
     The text box is cleared before input, in case any output is saved from a previously unsubmitted check-in that failed for whatever reason.
@@ -202,9 +225,9 @@ def submit_textbox(responseList, selection):
         elif len(responseList) > 1:
             ActionChains(browser).key_down(Keys.SHIFT).key_down(Keys.ENTER).key_up(Keys.SHIFT).key_up(Keys.ENTER).perform()
 
+
 def remove_goals():
     """Removes existing goals entered for the week.
-
     Ideally there should be nothing to remove since it is a clean slate for the week.
     If for whatever reason the check-in was aborted, it will remove existing entries to avoid duplicates.
     The bulk of the function resides within a while loop, which was needed in cases where an extremely large number of priorities was entered would always trigger an exception (in real world usage, this should never occur).
@@ -232,12 +255,14 @@ def remove_goals():
         if len(savedpris) == 0:
             break
         else:
-            continue
+            pass
+
 
 def reset_single_use():
     with open('singleuse.txt', 'w') as singleuse:
         for category in ['love', 'loathe', 'priority', 'help']:
             singleuse.write(f"{category}:\n")
+
 
 def check_quit():
     while True:
@@ -249,12 +274,14 @@ def check_quit():
             except WebDriverException:
                 break
 
+
 def printHelp():
     print("-k | --keychain:\tStores your password (Keychain on macOS or Windows Credential Locker on Windows)")
     print("-l | --love:\tSpecify a single use string")
     print("-d | --dislike:\tSpecify a single use string")
     print("-p | --priority:\tSpecify a single use string")
     print("-n | --need:\tSpecify a single use string")
+
 
 def main(argv):
     """
@@ -272,6 +299,7 @@ def main(argv):
     loathe = []
     priority = []
     help = []
+    included = []
 
     load_dotenv()
     if os.getenv('url'):
@@ -286,39 +314,34 @@ def main(argv):
             cmd = "md5sum singleuse.txt | awk '{print $1}'"
         if '8810610524679e08dbaa38c96ac4a3af' not in subprocess.getoutput(cmd):
             with open('singleuse.txt', 'r') as singleuse:
-                love = []
-                loathe = []
-                priority = []
-                help = []
                 for line in singleuse:
-                    category = line.split(':')
-                    if len(category[1]) > 2:
-                        if category[0] == 'love':
-                            love.append(category[1])
-                        elif category[0] == 'loathe':
-                            loathe.append(category[1])
-                        elif category[0] == 'priority':
-                            priority.append(category[1])
-                        elif category[0] == 'help':
-                            help.append(category[1])
+                    category = line.split(':', 1)
+                    try:
+                        if len(category[1]) > 1:
+                            if category[0] == 'love':
+                                love.append(category[1])
+                            elif category[0] == 'loathe':
+                                loathe.append(category[1])
+                            elif category[0] == 'priority':
+                                priority.append(category[1])
+                            elif category[0] == 'help':
+                                help.append(category[1])
+                    except IndexError:
+                        pass
             singleuse = True
     else:
         reset_single_use()
 
     if os.path.exists('love.txt') and os.path.exists('loathe.txt') and os.path.exists('priority.txt') and os.path.exists('help.txt'):
         if singleuse == False:
-            love = set()
-            loathe = set()
-            priority = set()
-            help = set()
             if os.path.getsize('love.txt') > 0:
-                love.add(random_answer('love.txt'))
+                love.append(random_answer('love.txt'))
             if os.path.getsize('loathe.txt') > 0:
-                loathe.add(random_answer('loathe.txt'))
+                loathe.append(random_answer('loathe.txt'))
             if os.path.getsize('priority.txt') > 0:
-                priority.add(random_answer('priority.txt'))
+                priority.append(random_answer('priority.txt'))
             if os.path.getsize('help.txt') > 0:
-                help.add(random_answer('help.txt'))
+                help.append(random_answer('help.txt'))
     else:
         for file in ['love.txt', 'loathe.txt', 'priority.txt', 'help.txt']:
             if not os.path.exists(file):
@@ -352,6 +375,10 @@ def main(argv):
             elif opt in ('-n', '--need'):
                 help = []
                 help.append(arg)
+    
+    included = incl_priority('priority.txt')
+    if len(included) > 0:
+        priority += included
 
     if keychainz.get_creds(__file__):
         passwd = keychainz.get_creds(__file__)
@@ -361,7 +388,7 @@ def main(argv):
         except KeyboardInterrupt:
             exit()
 
-    browser = init_browser()
+    browser = init_browser(url)
     browser = check_weekly(url, browser, user, passwd)
     submit_weekly(love, loathe, priority, help, browser)
     if singleuse == True:
@@ -369,6 +396,7 @@ def main(argv):
         reset_single_use()
     check_quit()
     exit()
+
 
 if __name__=="__main__":
     main(sys.argv[1:])
