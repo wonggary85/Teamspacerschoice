@@ -41,6 +41,8 @@ The script can also automatically retireve and use single use responses recorded
 
 The first run will create the necessary files needed to populate responses.
 
+You can add priorities that you want to include long term (such as a project) by prepending a 'lt:' before the string.
+
 ## Teamspacerschoice.py
 
 Currently this is incompatible with Windows due to `at` and `python-crontab`.
