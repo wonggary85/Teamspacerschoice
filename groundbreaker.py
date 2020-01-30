@@ -270,10 +270,10 @@ def remove_goals():
             pass
 
 
-def reset_single_use():
-    with open('singleuse.txt', 'w') as singleuse:
+def reset_single_include(file):
+    with open(file, 'w+') as infile:
         for category in ['love', 'loathe', 'priority', 'help']:
-            singleuse.write(f"{category}:\n")
+            infile.write(f"{category}:\n")
 
 
 def check_quit():
@@ -285,6 +285,55 @@ def check_quit():
                 break
             except WebDriverException:
                 break
+
+
+def get_single_include(file):
+    love = []
+    loathe = []
+    priority = []
+    help = []
+    if os.path.exists(file):
+        if sys.platform == 'win32':
+            cmd = f"CertUtil -hashfile {file} MD5 | find /i /v \"MD5\" | find /i /v \"certutil\""  # Windows find tool requires search string to be enclosed in double quotes
+        else:
+            cmd = "md5sum %s | awk '{print $1}'" % file
+        print(subprocess.getoutput(cmd))
+        if '8810610524679e08dbaa38c96ac4a3af' not in subprocess.getoutput(cmd):
+            with open(file, 'r') as singleinclude:
+                for line in singleinclude:
+                    category = line.split(':', 1)
+                    try:
+                        if len(category[1]) > 1:
+                            if category[0] == 'love':
+                                love.append(category[1])
+                            elif category[0] == 'loathe':
+                                loathe.append(category[1])
+                            elif category[0] == 'priority':
+                                priority.append(category[1])
+                            elif category[0] == 'help':
+                                help.append(category[1])
+                    except IndexError:
+                        pass
+            singleinclude = True
+            uberlist = [love, loathe, priority, help]
+            return uberlist, singleinclude
+    else:
+        reset_single_include(file)
+
+
+def check_file_hash(file):
+    if os.path.exists(file):
+        if sys.platform == 'win32':
+            cmd = f"CertUtil -hashfile {file} MD5 | find /i /v \"MD5\" | find /i /v \"certutil\""  # Windows find tool requires search string to be enclosed in double quotes
+        else:
+            cmd = "md5sum %s | awk '{print $1}'" % file
+        if '8810610524679e08dbaa38c96ac4a3af' not in subprocess.getoutput(cmd):
+            return True
+        else:
+            return False
+    else:
+        reset_single_include(file)
+        return False
 
 
 def printHelp():
@@ -306,19 +355,20 @@ def main(argv):
 
     global browser
     user = os.getlogin()
-    singleuse = False
     love = []
     loathe = []
     priority = []
     help = []
     included = []
+    singleuse = 'singleuse.txt'
+    singleinclude = 'include.txt'
 
     load_dotenv()
     if os.getenv('url'):
         url = os.getenv('url')
     else:
         url = input("URL: ")
-
+    """
     if os.path.exists('singleuse.txt'):
         if sys.platform == 'win32':
             cmd = "CertUtil -hashfile singleuse.txt MD5 | find /i /v \"MD5\" | find /i /v \"certutil\""  # Windows find tool requires search string to be enclosed in double quotes
@@ -342,7 +392,17 @@ def main(argv):
                         pass
             singleuse = True
     else:
-        reset_single_use()
+        reset_single_include('singleuse.txt')
+    """
+
+    if check_file_hash(singleuse):
+        uberlist, singleuse = get_single_include(singleuse)
+        love += uberlist[0]
+        loathe += uberlist[1]
+        priority += uberlist[2]
+        help += uberlist[3]
+    else:
+        singleuse = False
 
     if os.path.exists('love.txt') and os.path.exists('loathe.txt') and os.path.exists('priority.txt') and os.path.exists('help.txt'):
         if singleuse == False:
@@ -354,6 +414,14 @@ def main(argv):
                 priority.append(random_answer('priority.txt'))
             if os.path.getsize('help.txt') > 0:
                 help.append(random_answer('help.txt'))
+            if check_file_hash(singleinclude):
+                uberlist, singleinclude = get_single_include(singleinclude)
+                love += uberlist[0]
+                loathe += uberlist[1]
+                priority += uberlist[2]
+                help += uberlist[3]
+            else:
+                singleinclude = False
     else:
         for file in ['love.txt', 'loathe.txt', 'priority.txt', 'help.txt']:
             if not os.path.exists(file):
@@ -405,7 +473,10 @@ def main(argv):
     submit_weekly(love, loathe, priority, help, browser)
     if singleuse == True:
         print("Clearing singleuse.txt.")
-        reset_single_use()
+        reset_single_include('singleuse.txt')
+    if singleinclude == True:
+        print("Clearing include.txt.")
+        reset_single_include('include.txt')
     check_quit()
     exit()
 
