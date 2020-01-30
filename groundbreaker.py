@@ -5,6 +5,7 @@ import sys
 import keychainz
 import selenium
 import subprocess
+import time
 from getpass import getpass
 from random import randint
 from dotenv import load_dotenv
@@ -38,7 +39,7 @@ def init_browser(url):
     chrome_options.add_argument('--enable-file-cookies')
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36")
     chrome_options.add_argument(f"--app={url}")
-    chrome_options.add_argument("--kiosk")
+    #chrome_options.add_argument("--kiosk")
     capabilities = DesiredCapabilities.CHROME.copy()
     capabilities['platform'] = 'WINDOWS'
     capabilities['version'] = '10'
@@ -70,6 +71,7 @@ def random_answer(inputFile):
     pick = lines[randint(0,len(lines)-1)]
     return pick
 
+
 def incl_priority(inputFile):
     lines = []
     with open(inputFile, 'r') as file:
@@ -95,8 +97,18 @@ def check_weekly(url, browser, user, passwd):
             WebDriverWait(browser, 30).until(EC.element_to_be_clickable((By.NAME, 'device')))
             phone = Select(browser.find_element_by_name('device'))
             phone.select_by_value('phone1')
-            browser.find_element_by_class_name('positive.auth-button').click()
+            if 'getSMS' in dir():
+                passcode = browser.find_element_by_id('passcode')
+                passcode.click()
+                browser.find_element_by_id('message').click()
+                time.sleep(4)
+                textcode = getSMS()
+                browser.find_element_by_name('passcode').send_keys(textcode)
+                passcode.click()
+            else:
+                browser.find_element_by_class_name('positive.auth-button').click()
         except (TimeoutException, NoSuchElementException):
+            # Continue to next section to provide upto 30s for authentication
             pass 
         try:
             if WebDriverWait(browser, 30).until(EC.title_contains(('Team Dashboard'))) or browser.title == 'My Check-Ins':
@@ -113,9 +125,10 @@ def check_weekly(url, browser, user, passwd):
                 browser.find_element_by_id('myhome').click()
                 if browser.find_element_by_id('myperformance').is_displayed():
                     break
-            except StaleElementReferenceException:
-                # Trying again since the page title is correct
-                pass
+            except (StaleElementReferenceException, ElementNotInteractableException):
+                if browser.title == 'Team Dashboard':
+                    # Trying again since the page title is correct
+                    pass
             except TimeoutException:
                 print(f"myhome not found. Re-check your URL: {url}")
         while True:
@@ -195,8 +208,7 @@ def submit_weekly(love, loathe, priority, help, browser):
     # Submit help responses
     inputHelp = ['class_name', 'input.needinput']
     submit_textbox(help, inputHelp)
-    nosubmit = os.getenv('nosubmit')
-    if nosubmit.lower() == 'true':
+    if os.getenv('nosubmit') == 'True':
         print("Not submitting")
         pass
     else:
@@ -399,4 +411,13 @@ def main(argv):
 
 
 if __name__=="__main__":
+    load_dotenv()
+    try:
+        if os.getenv('sms') == 'gvoice':
+            from SMS.sms_gv import getSMS
+        elif os.getenv('sms') == 'twilio':
+            from SMS.sms_twilio import getSMS
+    except ModuleNotFoundError:
+        print(f"Unable to import module: {ModuleNotFoundError}.\nContiuning without SMS capabilities.")
+        pass
     main(sys.argv[1:])
