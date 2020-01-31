@@ -4,6 +4,7 @@ priority.txt
 loathe.txt
 help.txt
 singleuse.txt
+include.txt
 credentials.json
 token.pickle
 *.pickle
