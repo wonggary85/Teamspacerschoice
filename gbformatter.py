@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import sys
 import getopt
-from groundbreaker import reset_single_use as rsu
+from groundbreaker import reset_single_include as rsu
 
 
-def response_formatter(categories):
+def response_formatter(file, categories):
     inputs = []
-    with open('singleuse.txt', 'a+'):
-        file.write("\n")
+    with open(file, 'a+') as infile:
+        infile.write("\n")
         for category in categories:
             print(f"Writing to file {category}.\nctrl+c to stop current category entry.\n")
             while True:
@@ -20,7 +20,7 @@ def response_formatter(categories):
                         continue
                     else:
                         inputs.append(f"{category}:{line}")
-                        file.write(f"{category}:{line}\n")
+                        infile.write(f"{category}:{line}\n")
     print(f"\nWrote {len(inputs)} lines.")
     for item in inputs:
         print(f'\n\t{item}')
@@ -33,22 +33,20 @@ def print_help():
     print("-p | --priority:\tSpecify a single use string")
     print("-n | --need:\tSpecify a single use string")
     print("-r | --reset:\tClears/Resets the singleuse.txt file to default")
+    print("-i | --include:\tAdd entries to include.txt")
 
     
 def main(argv):
     categories = []
+    file = 'singleuse.txt'
     try:
-        opts,args = getopt.getopt(sys.argv[1:], 'hrl:d:p:n:',['love=', 'dislike=', 'priority=', 'need='])
+        opts,args = getopt.getopt(sys.argv[1:], 'hril:d:p:n:',['help', 'reset', 'include', 'love=', 'dislike=', 'priority=', 'need='])
     except Exception as err_msg:
         print(err_msg)
         exit()
     for opt,arg in opts:
         if opt in ('-h', '--help'):
             print_help()
-            exit()
-        elif opt in ('-r', '--reset'):
-            rsu()
-            print("Cleared singleuse.txt entries.")
             exit()
         elif opt in ('-l', '--love'):
             categories.append('love')
@@ -58,11 +56,15 @@ def main(argv):
             categories.append('priority')
         elif opt in ('-n', '--need'):
             categories.append('help')
+        elif opt in ('-i', '--include'):
+            file = 'include.txt'
+        elif opt in (-r', '--reset'):
+            rsu(file)
     if len(categories) > 0:
         response_formatter(categories)
     else:
         categories = ['love', 'loathe', 'priority', 'help']
-        response_formatter(categories)
+        response_formatter(file, categories)
     exit()
 
 
