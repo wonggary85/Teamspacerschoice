@@ -18,9 +18,17 @@
   * Alternatively, execute `groundbreaker.py` to immediately run
 
 * (Optional) Recommended to run `teamspacerschoice.py -c` to create cronjob for teamspacerschoice
+  * macOS users will need to grant cron full disk access in System Preferences > Security & Privacy > Privacy > Full Disk Access
 
 * (Optional) Recommended to run `groundbreaker.py -k` to save password in Keychain/Windows Credential Locker
 
+* (Optional) Enable SMS support
+  * via Google Voice and Gmail API
+    * Install python modules with `pip install -r gv_requirements.txt` (saved in SMS directory)
+    * Enable Gmail API on the account with Google Voice: https://console.developers.google.com
+    * Create a project, then create an OAuth 2.0 Client ID named 'groundbreaker.py' (type:Other) and download the client secret JSON to the groundbreaker.py directory
+    * First run will require a user to authorize the application
+  * via Twilio (NYI)
 
 ## About
 
@@ -37,7 +45,7 @@ This script will fetch a list of pre-recorded responses in love.txt, loathe.txt,
 
 Login credentials can be stored with option '-k' or '--keychain'. The credentials is saved to the native 'Keychain Access' app in macOS or 'Windows Credential Locker' on Windows.
 
-The script can also automatically retireve and use single use responses recorded in singleuse.txt or with CLI arguments. Single use responses take precedence over pre-recorded responses.
+The script can also automatically retireve and use single use responses recorded in 'singleuse.txt' or with CLI arguments. Single use responses take precedence over pre-recorded responses. If a user still wants automated messages to be selected in addition to single use responses, they can be recorded into 'include.txt'.
 
 The first run will create the necessary files needed to populate responses.
 
@@ -73,3 +81,6 @@ A '.env' file can be setup with variables for the URL and chromedriver absolute 
 
 > nosubmit=True
 
+> sms=gvoice
+
+> sms=twilio
