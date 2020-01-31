@@ -82,7 +82,6 @@ def incl_priority(inputFile):
 
 
 def check_weekly(url, browser, user, passwd):
-    page = False
     browser.get(url)
     if WebDriverWait(browser, 10).until(EC.title_contains("Login Page")):
         WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.NAME, 'pf.username')))
@@ -274,7 +273,7 @@ def reset_single_include(file):
     with open(file, 'w+') as infile:
         for category in ['love', 'loathe', 'priority', 'help']:
             infile.write(f"{category}:\n")
-
+    print(f"Cleared {file} entries.")
 
 def check_quit():
     while True:
@@ -297,7 +296,6 @@ def get_single_include(file):
             cmd = f"CertUtil -hashfile {file} MD5 | find /i /v \"MD5\" | find /i /v \"certutil\""  # Windows find tool requires search string to be enclosed in double quotes
         else:
             cmd = "md5sum %s | awk '{print $1}'" % file
-        print(subprocess.getoutput(cmd))
         if '8810610524679e08dbaa38c96ac4a3af' not in subprocess.getoutput(cmd):
             with open(file, 'r') as singleinclude:
                 for line in singleinclude:
@@ -368,32 +366,6 @@ def main(argv):
         url = os.getenv('url')
     else:
         url = input("URL: ")
-    """
-    if os.path.exists('singleuse.txt'):
-        if sys.platform == 'win32':
-            cmd = "CertUtil -hashfile singleuse.txt MD5 | find /i /v \"MD5\" | find /i /v \"certutil\""  # Windows find tool requires search string to be enclosed in double quotes
-        else:
-            cmd = "md5sum singleuse.txt | awk '{print $1}'"
-        if '8810610524679e08dbaa38c96ac4a3af' not in subprocess.getoutput(cmd):
-            with open('singleuse.txt', 'r') as singleuse:
-                for line in singleuse:
-                    category = line.split(':', 1)
-                    try:
-                        if len(category[1]) > 1:
-                            if category[0] == 'love':
-                                love.append(category[1])
-                            elif category[0] == 'loathe':
-                                loathe.append(category[1])
-                            elif category[0] == 'priority':
-                                priority.append(category[1])
-                            elif category[0] == 'help':
-                                help.append(category[1])
-                    except IndexError:
-                        pass
-            singleuse = True
-    else:
-        reset_single_include('singleuse.txt')
-    """
 
     if check_file_hash(singleuse):
         uberlist, singleuse = get_single_include(singleuse)
