@@ -56,6 +56,7 @@ def init_browser(url):
             driver_path = input("Absolute path to chromedriver.exe: ").strip(' "\'\t\r\n')
             with open('.env', 'a+') as file:
                 file.write(f'\n\ndriver_path={driver_path}')
+    print(f"Opening browser and navigating to: {url}")
     browser = webdriver.Chrome(options=chrome_options, desired_capabilities=capabilities, executable_path=driver_path)
     browser.set_window_size(1000,1000)
     return browser
@@ -96,14 +97,19 @@ def check_weekly(url, browser, user, passwd):
             WebDriverWait(browser, 30).until(EC.element_to_be_clickable((By.NAME, 'device')))
             phone = Select(browser.find_element_by_name('device'))
             phone.select_by_value('phone1')
-            if 'getSMS' in dir():
+            if os.getenv('sms') in ('gvoice', 'twilio'):
                 passcode = browser.find_element_by_id('passcode')
                 passcode.click()
                 browser.find_element_by_id('message').click()
                 time.sleep(4)
-                textcode = getSMS()
-                browser.find_element_by_name('passcode').send_keys(textcode)
-                passcode.click()
+                try:
+                    textcode = getSMS()
+                    browser.find_element_by_name('passcode').send_keys(textcode)
+                    passcode.click()
+                except Error as err_msg:
+                    print(f"{err_msg}\nError retrieving SMS. Falling back to phone call.")
+                    browser.find_element_by_class_name('positive.auth-button').click()
+                    pass
             else:
                 browser.find_element_by_class_name('positive.auth-button').click()
         except (TimeoutException, NoSuchElementException):
@@ -208,11 +214,11 @@ def submit_weekly(love, loathe, priority, help, browser):
     inputHelp = ['class_name', 'input.needinput']
     submit_textbox(help, inputHelp)
     if os.getenv('nosubmit') == 'True':
-        print("Not submitting")
+        print("Not submitting responses.")
         pass
     else:
         browser.find_element_by_class_name('button.pageButton.finishButton').click()
-        print("Submitting")
+        print("Submitting responses.")
 
 
 def submit_textbox(responseList, selection):
@@ -221,7 +227,7 @@ def submit_textbox(responseList, selection):
     Selection is a list composed of the type of element we are searching for, and the string we are searching for.
     The text box is cleared before input, in case any output is saved from a previously unsubmitted check-in that failed for whatever reason.
     """
-
+    
     if selection[0] == 'class_name':
         textbox = browser.find_element_by_class_name(selection[1])
         WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.CLASS_NAME, selection[1])))
@@ -230,6 +236,7 @@ def submit_textbox(responseList, selection):
         WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.ID, selection[1])))
     textbox.clear()
     for line in responseList:
+        print(f"Inputting {line}")
         textbox.send_keys(line.strip('\n'))
         if selection[1] == 'dlt-goalinput':
             browser.find_element_by_id('dlt-addgoalbtn').click()
@@ -350,7 +357,6 @@ def main(argv):
     -Check if weekly checkin was done (in case it was manually done)
     -If not manually specified, teamspacerschoice will randomly pick from random pre-prepared responses you created
     """
-
     global browser
     user = os.getlogin()
     love = []
