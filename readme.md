@@ -25,7 +25,7 @@
 * (Optional) Enable SMS support
   * via Google Voice and Gmail API
     * Install python modules with `pip install -r gv_requirements.txt` (saved in SMS directory)
-    * Enable Gmail API on the account with Google Voice: https://console.developers.google.com
+    * Enable Gmail API on the account with Google Voice
     * Create a project, then create an OAuth 2.0 Client ID named 'groundbreaker.py' (type:Other) and download the client secret JSON to the groundbreaker.py directory
     * First run will require a user to authorize the application
   * via Twilio (NYI)
@@ -69,7 +69,17 @@ Handles passwords used with Keyring/Windows Credential Locker. Not designed to b
 
 ## gbformatter.py
 
-Use to easily add multiple entries to singleuse.txt. 
+Use to easily add multiple entries to 'singleuse.txt' or 'include.txt'.
+
+## sms_gv.py
+
+Utilize Google Voice via Gmail API to retrieve 2FA.
+  1. Enable Gmail API: https://console.developers.google.com/apis/library/gmail.googleapis.com
+  2. Create a project (provide any project name)
+  3. Create an OAuth Client ID (type:Other), download the corresponding client secret JSON credential and save it to the same directory as groundbreaker.py
+  4. First time using the API will require you to acknowledge permissions for the script
+  5. Subsequent logins will utilize a token.pickle for authorization (automatically created when the authorization flow completes the first time)
+    5.1. The token.pickle stores the client secret credentials and refresh tokens
 
 ## .env
 
