@@ -23,11 +23,6 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException,
 
 ##################
 
-"""
-macos install chromedriver with `brew cask install chromedriver` and update with `brew cask upgrade chromedriver`
-Windows install from https://chromedriver.chromium.org/
-"""
-
 
 def init_browser(url):
     chrome_options = Options()
@@ -44,7 +39,20 @@ def init_browser(url):
     capabilities['platform'] = 'WINDOWS'
     capabilities['version'] = '10'
     if sys.platform == 'darwin':
-        driver_path = "/usr/local/bin/chromedriver"
+        if os.path.exists("/usr/local/bin/chromedriver"):
+            driver_path = "/usr/local/bin/chromedriver"
+            print(f'Loaded chromedriver: {driver_path}')
+        else:
+            if os.getenv('driver_path'):
+                driver_path = os.getenv('driver_path')
+            else:
+                driver_path = input("Absolute path to chromedriver.exe: ").strip(' "\'\t\r\n')
+                if os.path.exists(driver_path):
+                    with open('.env', 'a+') as file:
+                        file.write(f'\ndriver_path={driver_path}')
+                else:
+                    print(f'Chromedriver not found at path {driver_path}, verify chromedriver location.\nExiting.')
+                    exit()
     elif os.path.exists('chromedriver.exe'):
         # Check if the driver happens to be in the same directory (primarily here for windows users)
         driver_path = os.path.abspath('chromedriver.exe')
@@ -85,6 +93,7 @@ def incl_priority(inputFile):
 def check_weekly(url, browser, user, passwd):
     browser.get(url)
     if WebDriverWait(browser, 10).until(EC.title_contains("Login Page")):
+        print('Attempting to log in.')
         WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.NAME, 'pf.username')))
         browser.find_element_by_name('pf.username').send_keys(user)
         browser.find_element_by_id('login-button').click()
@@ -96,14 +105,19 @@ def check_weekly(url, browser, user, passwd):
         try:
             WebDriverWait(browser, 30).until(EC.element_to_be_clickable((By.NAME, 'device')))
             phone = Select(browser.find_element_by_name('device'))
+            print('Selecting phone.')
             phone.select_by_value('phone1')
+            print('Checking if SMS option enabled.')
             if os.getenv('sms') in ('gvoice', 'twilio'):
+                print('SMS enabled, selecting passcode option')
                 passcode = browser.find_element_by_id('passcode')
                 passcode.click()
                 browser.find_element_by_id('message').click()
+                print('Attempting to retrieve SMS passcode.')
                 time.sleep(4)
                 try:
                     textcode = getSMS()
+                    print(f'Got {textcode}.')
                     browser.find_element_by_name('passcode').send_keys(textcode)
                     passcode.click()
                 except Error as err_msg:
@@ -111,6 +125,7 @@ def check_weekly(url, browser, user, passwd):
                     browser.find_element_by_class_name('positive.auth-button').click()
                     pass
             else:
+                print('SMS not enabled, falling back to phone call')
                 browser.find_element_by_class_name('positive.auth-button').click()
         except (TimeoutException, NoSuchElementException):
             # Continue to next section to provide upto 30s for authentication
@@ -173,6 +188,7 @@ def submit_weekly(love, loathe, priority, help, browser):
     """
 
     WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.CLASS_NAME, "cirating.engagementrating")))
+    print('Selecting random ratings.')
     for strperf in ["cirating.engagementrating", "cirating.valuerating"]:
         while True:
             try:
@@ -186,10 +202,12 @@ def submit_weekly(love, loathe, priority, help, browser):
     next_page()
 
     # Submit loved responses
+    print('Submitting loved responses.')
     inputLove = ['class_name', 'input.strText']
     submit_textbox(love, inputLove)
 
     # Submit loathed responses
+    print('Submitting loathed responses.')
     inputLoathe = ['class_name', 'input.weakText']
     submit_textbox(loathe, inputLoathe)
     next_page()
@@ -206,11 +224,13 @@ def submit_weekly(love, loathe, priority, help, browser):
     # Submit priorities
     if browser.find_elements_by_class_name('icon-trash-bin.goaloption.removegoal'):
         remove_goals()
+    print('Submitting priorities.')
     inputPri = ['id', 'dlt-goalinput']
     submit_textbox(priority, inputPri)
     next_page()
 
     # Submit help responses
+    print('Submitting help responses.')
     inputHelp = ['class_name', 'input.needinput']
     submit_textbox(help, inputHelp)
     if os.getenv('nosubmit') == 'True':
@@ -342,6 +362,7 @@ def check_file_hash(file):
 
 
 def printHelp():
+    print("Install chromedriver https://chromedriver.chromium.org/\nmacOS users:`brew cask install chromedriver` and update with `brew cask install chromedriver`\n\n")
     print("-k | --keychain:\tStores your password (Keychain on macOS or Windows Credential Locker on Windows)")
     print("-l | --love:\tSpecify a single use string")
     print("-d | --dislike:\tSpecify a single use string")
