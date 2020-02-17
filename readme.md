@@ -4,7 +4,7 @@
 
 * (Optional) Setup virtualenv
 
-* Install python modules with `pip install -r requirements.txt`
+* Install python modules with `pip3 install -r requirements.txt`
 
 * Install [chromedriver](https://chromedriver.chromium.org/)
   * macOS `brew cask install chromedriver`
@@ -24,7 +24,7 @@
 
 * (Optional) Enable SMS support
   * via Google Voice and Gmail API
-    * Install python modules with `pip install -r gv_requirements.txt` (saved in SMS directory)
+    * Install python modules with `pip3 install -r gv_requirements.txt` (saved in SMS directory)
     * Enable Gmail API on the account with Google Voice
     * Create a project, then create an OAuth 2.0 Client ID named 'groundbreaker.py' (type:Other) and download the client secret JSON to the groundbreaker.py directory
     * First run will require a user to authorize the application
