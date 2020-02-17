@@ -5,6 +5,7 @@ import sys
 import keychainz
 import selenium
 import subprocess
+import time
 from getpass import getpass
 from random import randint
 from dotenv import load_dotenv
@@ -22,11 +23,6 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException,
 
 ##################
 
-"""
-macos install chromedriver with `brew cask install chromedriver` and update with `brew cask upgrade chromedriver`
-Windows install from https://chromedriver.chromium.org/
-"""
-
 
 def init_browser(url):
     chrome_options = Options()
@@ -38,12 +34,25 @@ def init_browser(url):
     chrome_options.add_argument('--enable-file-cookies')
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36")
     chrome_options.add_argument(f"--app={url}")
-    chrome_options.add_argument("--kiosk")
+    #chrome_options.add_argument("--kiosk")
     capabilities = DesiredCapabilities.CHROME.copy()
     capabilities['platform'] = 'WINDOWS'
     capabilities['version'] = '10'
     if sys.platform == 'darwin':
-        driver_path = "/usr/local/bin/chromedriver"
+        if os.path.exists("/usr/local/bin/chromedriver"):
+            driver_path = "/usr/local/bin/chromedriver"
+            print(f'Loaded chromedriver: {driver_path}')
+        else:
+            if os.getenv('driver_path'):
+                driver_path = os.getenv('driver_path')
+            else:
+                driver_path = input("Absolute path to chromedriver.exe: ").strip(' "\'\t\r\n')
+                if os.path.exists(driver_path):
+                    with open('.env', 'a+') as file:
+                        file.write(f'\ndriver_path={driver_path}')
+                else:
+                    print(f'Chromedriver not found at path {driver_path}, verify chromedriver location.\nExiting.')
+                    exit()
     elif os.path.exists('chromedriver.exe'):
         # Check if the driver happens to be in the same directory (primarily here for windows users)
         driver_path = os.path.abspath('chromedriver.exe')
@@ -55,6 +64,7 @@ def init_browser(url):
             driver_path = input("Absolute path to chromedriver.exe: ").strip(' "\'\t\r\n')
             with open('.env', 'a+') as file:
                 file.write(f'\n\ndriver_path={driver_path}')
+    print(f"Opening browser and navigating to: {url}")
     browser = webdriver.Chrome(options=chrome_options, desired_capabilities=capabilities, executable_path=driver_path)
     browser.set_window_size(1000,1000)
     return browser
@@ -70,6 +80,7 @@ def random_answer(inputFile):
     pick = lines[randint(0,len(lines)-1)]
     return pick
 
+
 def incl_priority(inputFile):
     lines = []
     with open(inputFile, 'r') as file:
@@ -80,9 +91,9 @@ def incl_priority(inputFile):
 
 
 def check_weekly(url, browser, user, passwd):
-    page = False
     browser.get(url)
     if WebDriverWait(browser, 10).until(EC.title_contains("Login Page")):
+        print('Attempting to log in.')
         WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.NAME, 'pf.username')))
         browser.find_element_by_name('pf.username').send_keys(user)
         browser.find_element_by_id('login-button').click()
@@ -94,9 +105,30 @@ def check_weekly(url, browser, user, passwd):
         try:
             WebDriverWait(browser, 30).until(EC.element_to_be_clickable((By.NAME, 'device')))
             phone = Select(browser.find_element_by_name('device'))
+            print('Selecting phone.')
             phone.select_by_value('phone1')
-            browser.find_element_by_class_name('positive.auth-button').click()
+            print('Checking if SMS option enabled.')
+            if os.getenv('sms') in ('gvoice', 'twilio'):
+                print('SMS enabled, selecting passcode option')
+                passcode = browser.find_element_by_id('passcode')
+                passcode.click()
+                browser.find_element_by_id('message').click()
+                print('Attempting to retrieve SMS passcode.')
+                time.sleep(4)
+                try:
+                    textcode = getSMS()
+                    print(f'Got {textcode}.')
+                    browser.find_element_by_name('passcode').send_keys(textcode)
+                    passcode.click()
+                except Error as err_msg:
+                    print(f"{err_msg}\nError retrieving SMS. Falling back to phone call.")
+                    browser.find_element_by_class_name('positive.auth-button').click()
+                    pass
+            else:
+                print('SMS not enabled, falling back to phone call')
+                browser.find_element_by_class_name('positive.auth-button').click()
         except (TimeoutException, NoSuchElementException):
+            # Continue to next section to provide upto 30s for authentication
             pass 
         try:
             if WebDriverWait(browser, 30).until(EC.title_contains(('Team Dashboard'))) or browser.title == 'My Check-Ins':
@@ -113,9 +145,10 @@ def check_weekly(url, browser, user, passwd):
                 browser.find_element_by_id('myhome').click()
                 if browser.find_element_by_id('myperformance').is_displayed():
                     break
-            except StaleElementReferenceException:
-                # Trying again since the page title is correct
-                pass
+            except (StaleElementReferenceException, ElementNotInteractableException):
+                if browser.title == 'Team Dashboard':
+                    # Trying again since the page title is correct
+                    pass
             except TimeoutException:
                 print(f"myhome not found. Re-check your URL: {url}")
         while True:
@@ -155,6 +188,7 @@ def submit_weekly(love, loathe, priority, help, browser):
     """
 
     WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.CLASS_NAME, "cirating.engagementrating")))
+    print('Selecting random ratings.')
     for strperf in ["cirating.engagementrating", "cirating.valuerating"]:
         while True:
             try:
@@ -168,10 +202,12 @@ def submit_weekly(love, loathe, priority, help, browser):
     next_page()
 
     # Submit loved responses
+    print('Submitting loved responses.')
     inputLove = ['class_name', 'input.strText']
     submit_textbox(love, inputLove)
 
     # Submit loathed responses
+    print('Submitting loathed responses.')
     inputLoathe = ['class_name', 'input.weakText']
     submit_textbox(loathe, inputLoathe)
     next_page()
@@ -188,20 +224,21 @@ def submit_weekly(love, loathe, priority, help, browser):
     # Submit priorities
     if browser.find_elements_by_class_name('icon-trash-bin.goaloption.removegoal'):
         remove_goals()
+    print('Submitting priorities.')
     inputPri = ['id', 'dlt-goalinput']
     submit_textbox(priority, inputPri)
     next_page()
 
     # Submit help responses
+    print('Submitting help responses.')
     inputHelp = ['class_name', 'input.needinput']
     submit_textbox(help, inputHelp)
-    nosubmit = os.getenv('nosubmit')
-    if nosubmit.lower() == 'true':
-        print("Not submitting")
+    if os.getenv('nosubmit') == 'True':
+        print("Not submitting responses.")
         pass
     else:
         browser.find_element_by_class_name('button.pageButton.finishButton').click()
-        print("Submitting")
+        print("Submitting responses.")
 
 
 def submit_textbox(responseList, selection):
@@ -210,7 +247,7 @@ def submit_textbox(responseList, selection):
     Selection is a list composed of the type of element we are searching for, and the string we are searching for.
     The text box is cleared before input, in case any output is saved from a previously unsubmitted check-in that failed for whatever reason.
     """
-
+    
     if selection[0] == 'class_name':
         textbox = browser.find_element_by_class_name(selection[1])
         WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.CLASS_NAME, selection[1])))
@@ -219,6 +256,7 @@ def submit_textbox(responseList, selection):
         WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.ID, selection[1])))
     textbox.clear()
     for line in responseList:
+        print(f"Inputting {line}")
         textbox.send_keys(line.strip('\n'))
         if selection[1] == 'dlt-goalinput':
             browser.find_element_by_id('dlt-addgoalbtn').click()
@@ -258,11 +296,11 @@ def remove_goals():
             pass
 
 
-def reset_single_use():
-    with open('singleuse.txt', 'w') as singleuse:
+def reset_single_include(file):
+    with open(file, 'w+') as infile:
         for category in ['love', 'loathe', 'priority', 'help']:
-            singleuse.write(f"{category}:\n")
-
+            infile.write(f"{category}:\n")
+    print(f"Cleared {file} entries.")
 
 def check_quit():
     while True:
@@ -275,7 +313,56 @@ def check_quit():
                 break
 
 
+def get_single_include(file):
+    love = []
+    loathe = []
+    priority = []
+    help = []
+    if os.path.exists(file):
+        if sys.platform == 'win32':
+            cmd = f"CertUtil -hashfile {file} MD5 | find /i /v \"MD5\" | find /i /v \"certutil\""  # Windows find tool requires search string to be enclosed in double quotes
+        else:
+            cmd = "md5sum %s | awk '{print $1}'" % file
+        if '8810610524679e08dbaa38c96ac4a3af' not in subprocess.getoutput(cmd):
+            with open(file, 'r') as singleinclude:
+                for line in singleinclude:
+                    category = line.split(':', 1)
+                    try:
+                        if len(category[1]) > 1:
+                            if category[0] == 'love':
+                                love.append(category[1])
+                            elif category[0] == 'loathe':
+                                loathe.append(category[1])
+                            elif category[0] == 'priority':
+                                priority.append(category[1])
+                            elif category[0] == 'help':
+                                help.append(category[1])
+                    except IndexError:
+                        pass
+            singleinclude = True
+            uberlist = [love, loathe, priority, help]
+            return uberlist, singleinclude
+    else:
+        reset_single_include(file)
+
+
+def check_file_hash(file):
+    if os.path.exists(file):
+        if sys.platform == 'win32':
+            cmd = f"CertUtil -hashfile {file} MD5 | find /i /v \"MD5\" | find /i /v \"certutil\""  # Windows find tool requires search string to be enclosed in double quotes
+        else:
+            cmd = "md5sum %s | awk '{print $1}'" % file
+        if '8810610524679e08dbaa38c96ac4a3af' not in subprocess.getoutput(cmd):
+            return True
+        else:
+            return False
+    else:
+        reset_single_include(file)
+        return False
+
+
 def printHelp():
+    print("Install chromedriver https://chromedriver.chromium.org/\nmacOS users:`brew cask install chromedriver` and update with `brew cask install chromedriver`\n\n")
     print("-k | --keychain:\tStores your password (Keychain on macOS or Windows Credential Locker on Windows)")
     print("-l | --love:\tSpecify a single use string")
     print("-d | --dislike:\tSpecify a single use string")
@@ -291,15 +378,15 @@ def main(argv):
     -Check if weekly checkin was done (in case it was manually done)
     -If not manually specified, teamspacerschoice will randomly pick from random pre-prepared responses you created
     """
-
     global browser
     user = os.getlogin()
-    singleuse = False
     love = []
     loathe = []
     priority = []
     help = []
     included = []
+    singleuse = 'singleuse.txt'
+    singleinclude = 'include.txt'
 
     load_dotenv()
     if os.getenv('url'):
@@ -307,30 +394,14 @@ def main(argv):
     else:
         url = input("URL: ")
 
-    if os.path.exists('singleuse.txt'):
-        if sys.platform == 'win32':
-            cmd = "CertUtil -hashfile singleuse.txt MD5 | find /i /v \"MD5\" | find /i /v \"certutil\""  # Windows find tool requires search string to be enclosed in double quotes
-        else:
-            cmd = "md5sum singleuse.txt | awk '{print $1}'"
-        if '8810610524679e08dbaa38c96ac4a3af' not in subprocess.getoutput(cmd):
-            with open('singleuse.txt', 'r') as singleuse:
-                for line in singleuse:
-                    category = line.split(':', 1)
-                    try:
-                        if len(category[1]) > 1:
-                            if category[0] == 'love':
-                                love.append(category[1])
-                            elif category[0] == 'loathe':
-                                loathe.append(category[1])
-                            elif category[0] == 'priority':
-                                priority.append(category[1])
-                            elif category[0] == 'help':
-                                help.append(category[1])
-                    except IndexError:
-                        pass
-            singleuse = True
+    if check_file_hash(singleuse):
+        uberlist, singleuse = get_single_include(singleuse)
+        love += uberlist[0]
+        loathe += uberlist[1]
+        priority += uberlist[2]
+        help += uberlist[3]
     else:
-        reset_single_use()
+        singleuse = False
 
     if os.path.exists('love.txt') and os.path.exists('loathe.txt') and os.path.exists('priority.txt') and os.path.exists('help.txt'):
         if singleuse == False:
@@ -342,6 +413,14 @@ def main(argv):
                 priority.append(random_answer('priority.txt'))
             if os.path.getsize('help.txt') > 0:
                 help.append(random_answer('help.txt'))
+            if check_file_hash(singleinclude):
+                uberlist, singleinclude = get_single_include(singleinclude)
+                love += uberlist[0]
+                loathe += uberlist[1]
+                priority += uberlist[2]
+                help += uberlist[3]
+            else:
+                singleinclude = False
     else:
         for file in ['love.txt', 'loathe.txt', 'priority.txt', 'help.txt']:
             if not os.path.exists(file):
@@ -393,10 +472,22 @@ def main(argv):
     submit_weekly(love, loathe, priority, help, browser)
     if singleuse == True:
         print("Clearing singleuse.txt.")
-        reset_single_use()
+        reset_single_include('singleuse.txt')
+    if singleinclude == True:
+        print("Clearing include.txt.")
+        reset_single_include('include.txt')
     check_quit()
     exit()
 
 
 if __name__=="__main__":
+    load_dotenv()
+    try:
+        if os.getenv('sms') == 'gvoice':
+            from SMS.sms_gv import getSMS
+        elif os.getenv('sms') == 'twilio':
+            from SMS.sms_twilio import getSMS
+    except ModuleNotFoundError:
+        print(f"Unable to import module: {ModuleNotFoundError}.\nContiuning without SMS capabilities.")
+        pass
     main(sys.argv[1:])

@@ -17,16 +17,26 @@ def clean_path(file):
     return file
 
 def set_creds(file):
-    file = clean_path(file)
-    try:
-        keyring.set_password(file, os.getlogin(), getpass(prompt="Password: "))
-    except PasswordSetError as err_msg:
-        print(f"Unable to set password: {err_msg}")
-        exit()
-    except KeyboardInterrupt:
-        exit()
-    except Exception as err_msg:
-        print(f'Error: {err_msg}')
+    if type(file) == list:
+        tmp = file
+        file = tmp[0]
+        passwd = tmp[1]
+        try:
+            keyring.set_password(file, os.getlogin(), passwd)
+        except PasswordSetError as err_msg:
+            print(f'Unable to set password: {err_msg}')
+            exit()
+    elif type(file) == str:
+        file = clean_path(file)
+        try:
+            keyring.set_password(file, os.getlogin(), getpass(prompt="Password: "))
+        except PasswordSetError as err_msg:
+            print(f"Unable to set password: {err_msg}")
+            exit()
+        except KeyboardInterrupt:
+            exit()
+        except Exception as err_msg:
+            print(f'Error: {err_msg}')
     if sys.platform == 'darwin':
         print("Saved to keychain.")
     elif sys.platform == 'win32':
